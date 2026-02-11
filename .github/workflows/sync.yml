@@ -1,0 +1,35 @@
+name: 自动同步原仓库(安全版)
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # 每 6 小时检查一次更新
+  workflow_dispatch:      # 支持手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须赋予写入权限
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史以确保合并成功
+
+      - name: 配置 Git 信息
+        run: |
+          git config --global user.name 'devtoy888'
+          git config --global user.email 'devtoy888@users.noreply.github.com'
+
+      - name: 合并上游更新
+        run: |
+          # 添加原作者仓库作为上游
+          git remote add upstream https://github.com/vikiboss/60s.git
+          git fetch upstream main
+          
+          # 执行合并。-m 自动填充提交信息，避免弹出编辑器
+          # --allow-unrelated-histories 预防初始化差异导致的失败
+          git merge upstream/main -m "chore: 自动同步上游更新" --allow-unrelated-histories
+          
+          # 推送到您自己的仓库
+          git push origin main
